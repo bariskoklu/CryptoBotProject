@@ -1,33 +1,37 @@
+using Binance.Common;
+using Binance.Spot.Models;
+using Binance.Spot;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CryptoBotProject.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase
+    public class KlineCandlestickData_Example : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
 
-        private readonly ILogger<WeatherForecastController> _logger;
+        private readonly ILogger<KlineCandlestickData_Example> _logger;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public KlineCandlestickData_Example(ILogger<KlineCandlestickData_Example> logger)
         {
             _logger = logger;
         }
 
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        [HttpGet]
+        public async Task Get()
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+                builder.AddConsole();
+            });
+            ILogger logger = loggerFactory.CreateLogger<KlineCandlestickData_Example>();
+
+            HttpMessageHandler loggingHandler = new BinanceLoggingHandler(logger: logger);
+            HttpClient httpClient = new HttpClient(handler: loggingHandler);
+
+            var market = new Market();
+
+            var result = await market.CheckServerTime();
         }
     }
 }
