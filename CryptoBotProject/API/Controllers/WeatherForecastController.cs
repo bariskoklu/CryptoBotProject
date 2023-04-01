@@ -5,9 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CryptoBotProject.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class KlineCandlestickData_Example : ControllerBase
+    public class KlineCandlestickData_Example : BaseApiController
     {
 
         private readonly ILogger<KlineCandlestickData_Example> _logger;
@@ -18,7 +16,7 @@ namespace CryptoBotProject.Controllers
         }
 
         [HttpGet]
-        public async Task Get()
+        public async Task<string> GetServerTime()
         {
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -32,6 +30,27 @@ namespace CryptoBotProject.Controllers
             var market = new Market();
 
             var result = await market.CheckServerTime();
+
+            return result;
+        }
+
+        [HttpGet("Candle-Stick")]
+        public async Task<string> GetExampleCandleStick()
+        {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+            });
+            ILogger logger = loggerFactory.CreateLogger<KlineCandlestickData_Example>();
+
+            HttpMessageHandler loggingHandler = new BinanceLoggingHandler(logger: logger);
+            HttpClient httpClient = new HttpClient(handler: loggingHandler);
+
+            var market = new Market(httpClient);
+
+            var result = await market.KlineCandlestickData("BNBUSDT", Interval.ONE_MINUTE);
+
+            return result;
         }
     }
 }
