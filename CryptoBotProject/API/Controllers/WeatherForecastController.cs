@@ -2,6 +2,7 @@ using Binance.Common;
 using Binance.Spot.Models;
 using Binance.Spot;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading;
 
 namespace CryptoBotProject.Controllers
 {
@@ -51,6 +52,32 @@ namespace CryptoBotProject.Controllers
             var result = await market.KlineCandlestickData("BNBUSDT", Interval.ONE_MINUTE);
 
             return result;
+        }
+
+        [HttpGet("WebSocket")]
+        public async Task GetData()
+        {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+            });
+            ILogger logger = loggerFactory.CreateLogger<KlineCandlestickData_Example>();
+
+            var websocket = new MarketDataWebSocket("btcusdt@kline_1s");
+
+            websocket.OnMessageReceived(
+                async (data) =>
+                {
+                    logger.LogInformation(data);
+                    await Task.CompletedTask;
+                }, CancellationToken.None);
+
+            await websocket.ConnectAsync(CancellationToken.None);
+
+            // wait for 5s before disconnected
+            await Task.Delay(5000);
+            logger.LogInformation("Disconnect with WebSocket Server");
+            await websocket.DisconnectAsync(CancellationToken.None);
         }
     }
 }
