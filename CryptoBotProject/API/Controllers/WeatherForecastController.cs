@@ -3,6 +3,9 @@ using Binance.Spot.Models;
 using Binance.Spot;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
+using API.Services.BackgroundTasks;
+using API.Interfaces;
+using API.Models;
 
 namespace CryptoBotProject.Controllers
 {
@@ -10,10 +13,12 @@ namespace CryptoBotProject.Controllers
     {
 
         private readonly ILogger<KlineCandlestickData_Example> _logger;
+        private readonly IBackgroundTaskFactory _backgroundTaskFactory;
 
-        public KlineCandlestickData_Example(ILogger<KlineCandlestickData_Example> logger)
+        public KlineCandlestickData_Example(ILogger<KlineCandlestickData_Example> logger, IBackgroundTaskFactory backgroundTaskFactory)
         {
             _logger = logger;
+            _backgroundTaskFactory = backgroundTaskFactory;
         }
 
         [HttpGet]
@@ -57,27 +62,14 @@ namespace CryptoBotProject.Controllers
         [HttpGet("WebSocket")]
         public async Task GetData()
         {
-            using var loggerFactory = LoggerFactory.Create(builder =>
+            var backgroundTaskParameter = new BackgroundTaskParameter
             {
-                builder.AddConsole();
-            });
-            ILogger logger = loggerFactory.CreateLogger<KlineCandlestickData_Example>();
-
-            var websocket = new MarketDataWebSocket("btcusdt@kline_1s");
-
-            websocket.OnMessageReceived(
-                async (data) =>
-                {
-                    logger.LogInformation(data);
-                    await Task.CompletedTask;
-                }, CancellationToken.None);
-
-            await websocket.ConnectAsync(CancellationToken.None);
-
-            // wait for 5s before disconnected
-            await Task.Delay(5000);
-            logger.LogInformation("Disconnect with WebSocket Server");
-            await websocket.DisconnectAsync(CancellationToken.None);
+                Interval = TimeSpan.FromSeconds(1),
+                TaskId= 1,
+                KlineStream= "btcusdt@kline_1s"
+            };
+            var backgroundTask = _backgroundTaskFactory.Create(backgroundTaskParameter);
+            await backgroundTask.StartAsync(CancellationToken.None);
         }
     }
 }
